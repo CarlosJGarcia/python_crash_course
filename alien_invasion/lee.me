@@ -1,0 +1,35 @@
+Activar / desactivar el entorno virtual Mac con pygame
+------------------------------------------------------
+$ venv/bin/activate
+$ code .
+$ deactivate
+
+
+Ficheros
+--------
+alien_invasion.py
+settings.py
+
+
+settings.py
+-----------
+Clase Settings
+Atributos:
+    - self.screen_width
+    - self.screen_height
+    - self.bg_color
+
+
+alien_invasion.py
+-----------------
+Clase AlienInvasion
+Atributos:
+    - self.clock
+    - self.screen
+    - self.settings
+Métodos:
+    - run_game()  Código del bucle principal del programa (gestión eventos y refresco pantalla)
+
+Código principal del programa
+- Crea un objeto 'ai' de la clase AlienInvasion
+- Llama al método ai.run_game() para ejecutar el bucle principal del programa
