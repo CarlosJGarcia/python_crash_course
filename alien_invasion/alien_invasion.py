@@ -11,6 +11,7 @@ from button import Button
 from bullet import Bullet
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 
 
 class AlienInvasion:
@@ -29,7 +30,9 @@ class AlienInvasion:
 
         pygame.display.set_caption("Alien Invasion")                                              
 
+        
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)             # Create an instance to store game statisticks and create a scoreboard
         self.ship = Ship(self)
         self.aliens = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
@@ -142,9 +145,13 @@ class AlienInvasion:
         # La comprobación solo funciona cuando el juego está parado y el botón está activo (no ha sido pulsado todavía)
         button_clicked = self.play_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
+            self.settings.init_dynamic_settings()
             self._start_game()
+            self.sb.prep_score()
         elif event.key == pygame.K_p and not self.game_active:
-            self._start_game()    
+            self.settings.init_dynamic_settings()
+            self._start_game()
+            self.sb.prep_score()    
             
 
     def _fire_bullet(self):
@@ -156,12 +163,17 @@ class AlienInvasion:
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collision."""
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        # Cuenta los puntos
+        if collisions:
+            self.stats.score += self.settings.alien_points
+            self.sb.prep_score()
 
         # Comprueba si se han destruido todos los aliens
         if not self.aliens:
             # Destroy existing bullets and create a new fleet
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
     
     def _update_bullets(self):
         """Update position of bullets and get rid of bullets that have dissapeared (not in the screen anymore)"""
@@ -226,6 +238,9 @@ class AlienInvasion:
             bullet.draw_bullet()
         self.ship.blitme()
         self.aliens.draw(self.screen)
+
+        # Draw the score information
+        self.sb.show_score()
 
         # If the game is inactive, draw the play button
         if not self.game_active:

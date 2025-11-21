@@ -14,6 +14,7 @@ from button import Button
 from bullet import Bullet
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 
 class SpaceInvaders:
     """Overall class to manage game assets and vehavior."""
@@ -28,6 +29,7 @@ class SpaceInvaders:
         pygame.display.set_caption("Space Invaders")                                              
 
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)             # Create an instance to store game statisticks and create a scoreboard
         self.ship = Ship(self)
         self.aliens = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
@@ -103,9 +105,22 @@ class SpaceInvaders:
         # La comprobación solo funciona cuando el juego está parado y el botón está activo (no ha sido pulsado todavía)
         button_clicked = self.play_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
+            self.settings.init_dynamic_settings()
             self._start_game()
-        elif event.key == pygame.K_p and not self.game_active:
-            self._start_game()    
+            self.sb.prep_score()
+            self.sb.prep_title()
+            self.sb.prep_title_highscore()
+            self.sb.prep_title_score2()
+            self.sb.prep_ships()
+        # elif event.key == pygame.K_p and not self.game_active:
+        elif event is not None and getattr(event, 'key', None) == pygame.K_p and not self.game_active:
+            self.settings.init_dynamic_settings()
+            self._start_game()
+            self.sb.prep_score()
+            self.sb.prep_title()
+            self.sb.prep_title_highscore()    
+            self.sb.prep_title_score2()
+            self.sb.prep_ships()
     
     def _check_keydown_events(self, event):
         """Respond to keypresses."""
@@ -151,12 +166,20 @@ class SpaceInvaders:
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collision."""
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        # Cuenta los puntos
+        if collisions:
+            # Como solo se dispara un misil cada vez, no hay posibilidad de que haya más de un elemento en la colección
+            self.stats.score += self.settings.alien_points
+            self.sb.prep_score()
+            self.sb.check_high_score()
 
         # Comprueba si se han destruido todos los aliens
         if not self.aliens:
             # Destroy existing bullets and create a new fleet
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
+            print(f"Alien speed: {self.settings.alien_speed}")
 
     def _update_aliens(self):
         """Update the position of all aliens in the fleet."""
@@ -176,6 +199,7 @@ class SpaceInvaders:
         if self.stats.ships_left > 0:
             # Decrement ships left
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
 
             # Get rid of any remaining bullets and aliens.
             self.bullets.empty()
@@ -209,9 +233,16 @@ class SpaceInvaders:
         self.ship.blitme()
         self.aliens.draw(self.screen)
 
+        # Draw the score information
+        self.sb.show_score()
+
         # If the game is inactive, draw the play button
         if not self.game_active:
             self.play_button.draw_button()
+
+        pygame.draw.line(self.screen, self.settings.ln_color, (0, self.settings.screen_height - 60), (self.settings.screen_width, self.settings.screen_height - 60), 3)
+
+        
 
         # Make the most recently drawn screen visible
         pygame.display.flip()
